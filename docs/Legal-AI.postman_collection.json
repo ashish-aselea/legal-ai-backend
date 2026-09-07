@@ -1,0 +1,1572 @@
+{
+  "info": {
+    "name": "Legal-AI Backend",
+    "description": "All Legal-AI backend APIs. Run requests top-to-bottom inside each folder — tokens/IDs are captured automatically into collection variables via the Tests tab, so you do not need to copy-paste anything manually.\n\nBefore running Admin requests: create an admin once from the terminal (no signup API for admin by design):\nnpm run create:admin -- 9000000099 \"Admin Name\"\n\nStatic OTP for every mobile number (dev only) is 123456 (see {{otp}} variable).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000/api/v1"
+    },
+    {
+      "key": "otp",
+      "value": "123456"
+    },
+    {
+      "key": "user_mobile",
+      "value": "9711111111"
+    },
+    {
+      "key": "lawyer_mobile",
+      "value": "9722222222"
+    },
+    {
+      "key": "lawyer2_mobile",
+      "value": "9733333333"
+    },
+    {
+      "key": "admin_mobile",
+      "value": "9000000099"
+    },
+    {
+      "key": "registrationToken",
+      "value": ""
+    },
+    {
+      "key": "lawyerRegistrationToken",
+      "value": ""
+    },
+    {
+      "key": "lawyer2RegistrationToken",
+      "value": ""
+    },
+    {
+      "key": "userToken",
+      "value": ""
+    },
+    {
+      "key": "lawyerToken",
+      "value": ""
+    },
+    {
+      "key": "lawyer2Token",
+      "value": ""
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "lawyerProfileId",
+      "value": ""
+    },
+    {
+      "key": "lawyer2ProfileId",
+      "value": ""
+    },
+    {
+      "key": "bookingId",
+      "value": ""
+    },
+    {
+      "key": "booking_date",
+      "value": ""
+    },
+    {
+      "key": "practiceAreaId",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "(function () {",
+          "  var d = new Date();",
+          "  d.setDate(d.getDate() + 1);",
+          "  pm.collectionVariables.set('booking_date', d.toISOString().slice(0, 10));",
+          "})();"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "No auth. Confirms server is up and DB is connected."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth - User (new signup)",
+      "item": [
+        {
+          "name": "1. Send OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/send-otp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "send-otp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"{{user_mobile}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Change {{user_mobile}} to a fresh 10-digit number if you get a 409 later (number already signed up)."
+          }
+        },
+        {
+          "name": "2. Verify OTP (new user)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verify-otp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verify-otp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"{{user_mobile}}\",\n  \"otp\": \"{{otp}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Response field is always 'token'; tokenType tells you which kind: 'registration' (signup only) or 'access' (everything else)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json().data;",
+                  "  if (data.tokenType === 'registration') pm.collectionVariables.set('registrationToken', data.token);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Signup as User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{registrationToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/signup/user",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "signup",
+                "user"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ravi Kumar\",\n  \"email\": \"ravi.kumar@example.com\",\n  \"city\": \"Jaipur\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json().data;",
+                  "  if (data.token) pm.collectionVariables.set('userToken', data.token);",
+                  "  if (data.user && data.user.id) pm.collectionVariables.set('userId', data.user.id);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4. Get My Profile (/me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5. Send OTP (re-login)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/send-otp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "send-otp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"{{user_mobile}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "6. Verify OTP (re-login)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verify-otp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verify-otp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"{{user_mobile}}\",\n  \"otp\": \"{{otp}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "isNewUser will now be false, tokenType will be 'access' directly (no registration step)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json().data;",
+                  "  if (data.tokenType === 'access') pm.collectionVariables.set('userToken', data.token);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7. Update My Profile (name/email/city)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ravi Kumar Updated\",\n  \"city\": \"Udaipur\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "All fields optional (name, email, city) — send at least one. Works for both user and lawyer roles."
+          }
+        },
+        {
+          "name": "8. Upload Profile Photo",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me/photo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me",
+                "photo"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "description": "multipart/form-data, field name must be 'photo'. Click the field's value box in Postman and pick a JPG/PNG/WEBP file (max 5MB) — 'src' can't be pre-filled from a collection file. Works for both user and lawyer roles."
+          }
+        },
+        {
+          "name": "9. Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Stateless JWT: server has nothing to invalidate, so this just confirms the token is valid. Actual logout = the app deletes the token from local storage."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth - Lawyer (signup + approval-pending)",
+      "item": [
+        {
+          "name": "1. Send OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/send-otp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "send-otp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"{{lawyer_mobile}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "2. Verify OTP (new lawyer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verify-otp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verify-otp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"{{lawyer_mobile}}\",\n  \"otp\": \"{{otp}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json().data;",
+                  "  if (data.tokenType === 'registration') pm.collectionVariables.set('lawyerRegistrationToken', data.token);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Signup as Lawyer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lawyerRegistrationToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/signup/lawyer",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "signup",
+                "lawyer"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Adv. Meena Sharma\",\n  \"email\": \"meena.sharma@example.com\",\n  \"iAmA\": \"Retired judge\",\n  \"barCouncilEnrollmentNumber\": \"D/9999/2010\",\n  \"practiceArea\": \"Judicial\",\n  \"yearsOfExperience\": 15,\n  \"cityJurisdiction\": \"Jaipur, Rajasthan\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "iAmA: 'Practicing lawyer' | 'Retired judge'.\npracticeArea: 'Criminal' | 'Family' | 'Corporate & Civil' | 'Judicial'."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json().data;",
+                  "  if (data.token) pm.collectionVariables.set('lawyerToken', data.token);",
+                  "  if (data.lawyerProfile && data.lawyerProfile._id) pm.collectionVariables.set('lawyerProfileId', data.lawyerProfile._id);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4. Get My Profile (/me) - pending",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lawyerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "canAccessHome should be false and approvalStatus should be 'pending' until an admin approves."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth - Second Lawyer (for reject demo)",
+      "item": [
+        {
+          "name": "1. Send OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/send-otp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "send-otp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"{{lawyer2_mobile}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "2. Verify OTP (new lawyer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verify-otp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verify-otp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"{{lawyer2_mobile}}\",\n  \"otp\": \"{{otp}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json().data;",
+                  "  if (data.tokenType === 'registration') pm.collectionVariables.set('lawyer2RegistrationToken', data.token);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Signup as Lawyer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lawyer2RegistrationToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/signup/lawyer",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "signup",
+                "lawyer"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Adv. Rajesh Gupta\",\n  \"email\": \"rajesh.gupta@example.com\",\n  \"iAmA\": \"Practicing lawyer\",\n  \"barCouncilEnrollmentNumber\": \"D/1234/2015\",\n  \"practiceArea\": \"Criminal\",\n  \"yearsOfExperience\": 8,\n  \"cityJurisdiction\": \"Mumbai, Maharashtra\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json().data;",
+                  "  if (data.token) pm.collectionVariables.set('lawyer2Token', data.token);",
+                  "  if (data.lawyerProfile && data.lawyerProfile._id) pm.collectionVariables.set('lawyer2ProfileId', data.lawyerProfile._id);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "1. Send OTP (admin number)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/send-otp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "send-otp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"{{admin_mobile}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "This mobile number must already exist as role=admin. Create it once from the terminal:\nnpm run create:admin -- 9000000099 \"Admin Name\""
+          }
+        },
+        {
+          "name": "2. Verify OTP (admin login)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verify-otp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verify-otp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobile\": \"{{admin_mobile}}\",\n  \"otp\": \"{{otp}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json().data;",
+                  "  if (data.token) pm.collectionVariables.set('adminToken', data.token);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. List Pending Lawyers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/lawyers?status=pending",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "lawyers"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            },
+            "description": "status can be: pending | approved | rejected. Omit the query param to list all."
+          }
+        },
+        {
+          "name": "4. Approve Lawyer",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/lawyers/{{lawyerProfileId}}/approve",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "lawyers",
+                "{{lawyerProfileId}}",
+                "approve"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5. Reject Lawyer (2nd lawyer)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/lawyers/{{lawyer2ProfileId}}/reject",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "lawyers",
+                "{{lawyer2ProfileId}}",
+                "reject"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rejectionReason\": \"Bar Council enrollment number could not be verified\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "6. List All Practice Areas (incl. inactive)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/practice-areas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "practice-areas"
+              ]
+            }
+          }
+        },
+        {
+          "name": "7. Add Practice Area",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/practice-areas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "practice-areas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tax Law\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "New categories appear in GET /practice-areas (public) immediately — no app update needed."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json().data;",
+                  "  if (data && data.practiceArea) pm.collectionVariables.set('practiceAreaId', data.practiceArea.id);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8. Deactivate Practice Area (soft delete)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/practice-areas/{{practiceAreaId}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "practice-areas",
+                "{{practiceAreaId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Deactivated areas disappear from the public list and are rejected on new lawyer signups, but existing lawyers who already had this value keep it."
+          }
+        },
+        {
+          "name": "9. List Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/users?role=user&isBlocked=true&search=ravi",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "role",
+                  "value": "user",
+                  "disabled": true
+                },
+                {
+                  "key": "isBlocked",
+                  "value": "true",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "ravi",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Run 'Auth - User' folder first so {{userId}} is set. Optional filters (enable as needed): role (user|lawyer|admin), isBlocked (true|false), search (name/mobile/email)."
+          }
+        },
+        {
+          "name": "10. Block User",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/users/{{userId}}/block",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{userId}}",
+                "block"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Suspicious activity reported\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Blocks immediately — the user's existing token stops working on the very next request, and they cannot log in again until unblocked. Admin accounts cannot be blocked."
+          }
+        },
+        {
+          "name": "11. Unblock User",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/users/{{userId}}/unblock",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{userId}}",
+                "unblock"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Practice Areas (public)",
+      "item": [
+        {
+          "name": "1. List Active Practice Areas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/practice-areas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "practice-areas"
+              ]
+            },
+            "description": "Public, no auth. Powers the lawyer-signup dropdown and the 'Find a lawyer' filter chips. Admin-managed — see the Admin folder to add/deactivate categories."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lawyers (public listing + self-update)",
+      "item": [
+        {
+          "name": "1. List All Approved Lawyers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/lawyers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "lawyers"
+              ]
+            },
+            "description": "Public, no auth. Only approvalStatus=approved lawyers are returned. Run this AFTER approving a lawyer in the Admin folder."
+          }
+        },
+        {
+          "name": "2. Filter by practiceArea",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/lawyers?practiceArea=Judicial",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "lawyers"
+              ],
+              "query": [
+                {
+                  "key": "practiceArea",
+                  "value": "Judicial"
+                }
+              ]
+            },
+            "description": "practiceArea: Criminal | Family | Corporate & Civil | Judicial"
+          }
+        },
+        {
+          "name": "3. Search",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/lawyers?search=Jaipur",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "lawyers"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "Jaipur"
+                }
+              ]
+            },
+            "description": "Matches against lawyer name, practiceArea, and cityJurisdiction."
+          }
+        },
+        {
+          "name": "4. Get Lawyer By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/lawyers/{{lawyerProfileId}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "lawyers",
+                "{{lawyerProfileId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "5. Update My Profile (lawyer only)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lawyerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/lawyers/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "lawyers",
+                "me"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Adv. Meena Sharma\",\n  \"email\": \"meena.sharma@example.com\",\n  \"pricePerSession\": 800,\n  \"callFeePerMinute\": 15,\n  \"availabilityStatus\": \"Available\",\n  \"bio\": \"Adv. Meena Sharma is a highly respected legal professional specializing in complex matters, with over 15 years of experience.\",\n  \"specializations\": [\n    \"Financial Crimes\",\n    \"Cyber Law\",\n    \"Corporate Litigation\"\n  ],\n  \"languages\": [\n    \"Hindi\",\n    \"English\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "The single 'Edit Profile' call for a lawyer — name/email update the User doc, everything else updates LawyerProfile, in one request. All fields optional, send at least one. availabilityStatus: 'Available' | 'Busy'. pricePerSession bills a Chat/fixed session; callFeePerMinute bills Audio/Video by the minute. profilePhotoUrl, casesHandled and consultsCount are read-only here — set via /auth/me/photo or managed by the system."
+          }
+        },
+        {
+          "name": "6. Lawyer Reviews (display only)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/lawyers/{{lawyerProfileId}}/reviews",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "lawyers",
+                "{{lawyerProfileId}}",
+                "reviews"
+              ]
+            },
+            "description": "Read-only for now — the write/submit review API will come once the booking-completion flow exists, so this list stays empty until then."
+          }
+        },
+        {
+          "name": "7. Disable Video Consultations",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lawyerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/lawyers/me/consultation-types/video",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "lawyers",
+                "me",
+                "consultation-types",
+                "video"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"available\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "One endpoint per type (chat | audio | video) — toggled independently, so a lawyer can turn off Video while keeping Chat and Audio on. Booking a disabled type is rejected with a 400."
+          }
+        },
+        {
+          "name": "8. Re-enable Video Consultations",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lawyerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/lawyers/me/consultation-types/video",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "lawyers",
+                "me",
+                "consultation-types",
+                "video"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"available\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Restores the default so the Booking folder below (which books Chat) is unaffected either way — run this to confirm the flag flips back too."
+          }
+        },
+        {
+          "name": "9. Update Consultation Fee (session)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lawyerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/lawyers/me/consultation-fee",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "lawyers",
+                "me",
+                "consultation-fee"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pricePerSession\": 800\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Dedicated endpoint for just this one field — an alternative to sending it inside the combined PATCH /lawyers/me body. Bills a Chat / fixed session."
+          }
+        },
+        {
+          "name": "10. Update Call Fee Per Minute (audio/video)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lawyerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/lawyers/me/call-fee-per-minute",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "lawyers",
+                "me",
+                "call-fee-per-minute"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"callFeePerMinute\": 15\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Dedicated endpoint for just this one field. Bills Audio/Video consultations by the minute."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Booking (consultation)",
+      "item": [
+        {
+          "name": "1. Check Availability",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/lawyers/{{lawyerProfileId}}/availability?date={{booking_date}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "lawyers",
+                "{{lawyerProfileId}}",
+                "availability"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "{{booking_date}}"
+                }
+              ]
+            },
+            "description": "Fixed slots for every lawyer: 10:00 AM, 11:30 AM, 2:00 PM, 4:30 PM. isAvailable=false means someone already holds that slot. Set {{booking_date}} to a future YYYY-MM-DD."
+          }
+        },
+        {
+          "name": "2. Create Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bookings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lawyerId\": \"{{lawyerProfileId}}\",\n  \"consultationType\": \"Chat\",\n  \"date\": \"{{booking_date}}\",\n  \"timeSlot\": \"11:30 AM\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "consultationType: 'Chat' | 'Audio' | 'Video'. Booking is created with status 'pending_payment'; the lawyer must have a pricePerSession set first."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json().data;",
+                  "  if (data && data.booking) pm.collectionVariables.set('bookingId', data.booking.id);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Confirm Payment (stub)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bookings/{{bookingId}}/confirm-payment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bookings",
+                "{{bookingId}}",
+                "confirm-payment"
+              ]
+            },
+            "description": "Stands in for the real payment gateway callback until Razorpay (or similar) is integrated. Flips status pending_payment -> confirmed."
+          }
+        }
+      ]
+    }
+  ]
+}

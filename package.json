@@ -1,0 +1,32 @@
+{
+  "name": "legal-ai-backend",
+  "version": "1.0.0",
+  "description": "Legal AI Backend API - Node.js + Express + MongoDB",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "create:admin": "node scripts/createAdmin.js",
+    "seed:practice-areas": "node scripts/seedPracticeAreas.js"
+  },
+  "keywords": [
+    "legal-ai",
+    "api",
+    "express"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cloudinary": "^2.11.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.5.1",
+    "multer": "^2.3.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

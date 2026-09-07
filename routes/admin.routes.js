@@ -1,0 +1,50 @@
+const express = require("express");
+const adminController = require("../controllers/admin.controller");
+const practiceAreaController = require("../controllers/practiceArea.controller");
+const dashboardController = require("../controllers/dashboard.controller");
+const { authenticate, requireRole } = require("../middleware/auth");
+const { validateBody } = require("../middleware/validate");
+const { rejectLawyerSchema } = require("../validators/auth.validators");
+const {
+  createPracticeAreaSchema,
+  updatePracticeAreaSchema,
+} = require("../validators/practiceArea.validators");
+const { blockUserSchema } = require("../validators/user.validators");
+const { USER_ROLES } = require("../models/User");
+
+const router = express.Router();
+
+// Every admin route needs a logged-in admin.
+router.use(authenticate, requireRole(USER_ROLES.ADMIN));
+
+router.get("/lawyers", adminController.listLawyers);
+router.patch("/lawyers/:id/approve", adminController.approveLawyer);
+router.patch(
+  "/lawyers/:id/reject",
+  validateBody(rejectLawyerSchema),
+  adminController.rejectLawyer
+);
+
+router.get("/practice-areas", practiceAreaController.listAllPracticeAreas);
+router.post(
+  "/practice-areas",
+  validateBody(createPracticeAreaSchema),
+  practiceAreaController.createPracticeArea
+);
+router.patch(
+  "/practice-areas/:id",
+  validateBody(updatePracticeAreaSchema),
+  practiceAreaController.updatePracticeArea
+);
+
+router.get("/dashboard/stats", dashboardController.getDashboardStats);
+router.get("/dashboard/user-growth", dashboardController.getUserGrowth);
+router.get("/dashboard/recent", dashboardController.getRecentActivity);
+
+router.get("/users", adminController.listUsers);
+router.patch("/users/:id/block", validateBody(blockUserSchema), adminController.blockUser);
+router.patch("/users/:id/unblock", adminController.unblockUser);
+
+router.get("/consultations", adminController.listConsultations);
+
+module.exports = router;
