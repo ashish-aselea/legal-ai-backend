@@ -1,13 +1,13 @@
 {
   "info": {
     "name": "Legal-AI Backend",
-    "description": "All Legal-AI backend APIs. Run requests top-to-bottom inside each folder — tokens/IDs are captured automatically into collection variables via the Tests tab, so you do not need to copy-paste anything manually.\n\nBefore running Admin requests: create an admin once from the terminal (no signup API for admin by design):\nnpm run create:admin -- 9000000099 \"Admin Name\"\n\nStatic OTP for every mobile number (dev only) is 123456 (see {{otp}} variable).",
+    "description": "All Legal-AI backend APIs. base_url points to the live Render deployment by default — change it to http://localhost:5000/api/v1 if you're testing against your own machine instead. Run requests top-to-bottom inside each folder — tokens/IDs are captured automatically into collection variables via the Tests tab, so you do not need to copy-paste anything manually.\n\nBefore running Admin requests: an admin account (9000000099) already exists — created via `npm run create:admin -- 9000000099 \"Admin Name\"` on whichever backend you're pointed at.\n\nStatic OTP for every mobile number (dev only) is 123456 (see {{otp}} variable).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "base_url",
-      "value": "http://localhost:5000/api/v1"
+      "value": "https://legal-ai-backend-g86o.onrender.com/api/v1"
     },
     {
       "key": "otp",
