@@ -2,6 +2,7 @@ const { AppError } = require("../middleware/errorHandler");
 const { asyncHandler } = require("../utils/asyncHandler");
 const { LawyerProfile, APPROVAL_STATUS } = require("../models/LawyerProfile");
 const { Booking, BOOKING_STATUS } = require("../models/Booking");
+const { dayAbbrForDate } = require("../utils/dayOfWeek");
 
 const buildBookingResponse = (booking) => ({
   id: String(booking._id),
@@ -43,6 +44,9 @@ exports.createBooking = asyncHandler(async (req, res) => {
   }
   if (!profile.supportedConsultationTypes.includes(consultationType)) {
     throw new AppError(`This lawyer does not currently offer ${consultationType} consultations`, 400);
+  }
+  if (!profile.availableDays.includes(dayAbbrForDate(date))) {
+    throw new AppError("This lawyer is not available on the selected day", 400);
   }
 
   const slotTaken = await Booking.findOne({

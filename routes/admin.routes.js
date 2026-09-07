@@ -2,6 +2,7 @@ const express = require("express");
 const adminController = require("../controllers/admin.controller");
 const practiceAreaController = require("../controllers/practiceArea.controller");
 const dashboardController = require("../controllers/dashboard.controller");
+const workingHoursController = require("../controllers/workingHours.controller");
 const { authenticate, requireRole } = require("../middleware/auth");
 const { validateBody } = require("../middleware/validate");
 const { rejectLawyerSchema } = require("../validators/auth.validators");
@@ -10,6 +11,7 @@ const {
   updatePracticeAreaSchema,
 } = require("../validators/practiceArea.validators");
 const { blockUserSchema } = require("../validators/user.validators");
+const { updateWorkingHoursSchema } = require("../validators/workingHours.validators");
 const { USER_ROLES } = require("../models/User");
 
 const router = express.Router();
@@ -46,5 +48,12 @@ router.patch("/users/:id/block", validateBody(blockUserSchema), adminController.
 router.patch("/users/:id/unblock", adminController.unblockUser);
 
 router.get("/consultations", adminController.listConsultations);
+
+router.get("/working-hours", workingHoursController.listWorkingHours);
+router.patch(
+  "/working-hours/:day",
+  validateBody(updateWorkingHoursSchema),
+  workingHoursController.updateWorkingHours
+);
 
 module.exports = router;

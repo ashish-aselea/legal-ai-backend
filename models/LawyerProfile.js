@@ -17,6 +17,8 @@ const AVAILABILITY_STATUS = {
   BUSY: "Busy",
 };
 
+const DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
 const lawyerProfileSchema = new mongoose.Schema(
   {
     user: {
@@ -75,6 +77,15 @@ const lawyerProfileSchema = new mongoose.Schema(
       enum: Object.values(CONSULTATION_TYPES),
       default: Object.values(CONSULTATION_TYPES),
     },
+    // Which weekdays this lawyer accepts bookings on. Time-of-day within a day
+    // is still governed by the fixed TIME_SLOTS in Booking.js — this only
+    // gates whole days on/off. Defaults to every day so existing lawyers keep
+    // working as before this field existed.
+    availableDays: {
+      type: [String],
+      enum: DAYS_OF_WEEK,
+      default: DAYS_OF_WEEK,
+    },
   },
   { timestamps: true }
 );
@@ -86,4 +97,5 @@ module.exports = {
   LAWYER_TYPES,
   APPROVAL_STATUS,
   AVAILABILITY_STATUS,
+  DAYS_OF_WEEK,
 };

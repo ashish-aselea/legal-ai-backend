@@ -4,6 +4,7 @@ const { LawyerProfile, APPROVAL_STATUS } = require("../models/LawyerProfile");
 const { User } = require("../models/User");
 const { Review } = require("../models/Review");
 const { Booking, TIME_SLOTS, BOOKING_STATUS, CONSULTATION_TYPES } = require("../models/Booking");
+const { dayAbbrForDate } = require("../utils/dayOfWeek");
 
 const buildLawyerCard = (profile) => ({
   id: String(profile._id),
@@ -131,14 +132,19 @@ exports.getLawyerAvailability = asyncHandler(async (req, res) => {
     status: { $in: [BOOKING_STATUS.PENDING_PAYMENT, BOOKING_STATUS.CONFIRMED] },
   }).distinct("timeSlot");
 
+  // A day the lawyer has turned off entirely shows every slot as unavailable,
+  // so the app can grey the whole day out instead of only individual slots.
+  const isDayAvailable = profile.availableDays.includes(dayAbbrForDate(date));
+
   res.status(200).json({
     status: "success",
     data: {
       date,
+      isDayAvailable,
       pricePerSession: profile.pricePerSession,
       slots: TIME_SLOTS.map((slot) => ({
         timeSlot: slot,
-        isAvailable: !taken.includes(slot),
+        isAvailable: isDayAvailable && !taken.includes(slot),
       })),
     },
   });
@@ -237,4 +243,40 @@ exports.updatePricePerSession = asyncHandler(async (req, res) => {
 // PATCH /api/v1/lawyers/me/call-fee-per-minute  (bills Audio/Video by the minute)
 exports.updateCallFeePerMinute = asyncHandler(async (req, res) => {
   await setOwnProfileField(req, res, "callFeePerMinute", "Per-minute call fee updated");
+});
+
+// GET /api/v1/lawyers/me/weekly-availability
+exports.getMyWeeklyAvailability = asyncHandler(async (req, res) => {
+  const profile = await LawyerProfile.findOne({ user: req.user.id }).select("availableDays");
+  if (!profile) {
+    throw new AppError("Lawyer profile not found", 404);
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: { availableDays: profile.availableDays },
+  });
+});
+
+// PATCH /api/v1/lawyers/me/weekly-availability
+// Body: { "availableDays": ["Mon","Tue","Wed","Thu","Fri"] } — the full set to
+// keep on, not a single day toggle (unlike consultation-types). An empty
+// array is valid — the lawyer is off for the whole week (e.g. on leave).
+// A day left out here is blocked from new bookings; see createBooking.
+exports.updateMyWeeklyAvailability = asyncHandler(async (req, res) => {
+  const profile = await LawyerProfile.findOneAndUpdate(
+    { user: req.user.id },
+    { $set: { availableDays: req.body.availableDays } },
+    { new: true }
+  ).select("availableDays");
+
+  if (!profile) {
+    throw new AppError("Lawyer profile not found", 404);
+  }
+
+  res.status(200).json({
+    status: "success",
+    message: "Weekly availability updated",
+    data: { availableDays: profile.availableDays },
+  });
 });

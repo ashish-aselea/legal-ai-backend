@@ -1146,6 +1146,91 @@
               ]
             }
           }
+        },
+        {
+          "name": "12. List Working Hours",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/working-hours",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "working-hours"
+              ]
+            }
+          }
+        },
+        {
+          "name": "13. Update Saturday Working Hours",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/working-hours/sat",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "working-hours",
+                "sat"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startTime\": \"10:00 AM\",\n  \"endTime\": \"2:00 PM\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "URL day is mon | tue | wed | thu | fri | sat | sun — one endpoint per day, each set independently. This is purely a display time range for the 'Set availability' screen — it is NOT linked to the fixed booking TIME_SLOTS (10:00 AM, 11:30 AM, 2:00 PM, 4:30 PM). Changes are visible immediately on the public GET /working-hours below."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Working Hours (public)",
+      "item": [
+        {
+          "name": "1. List Working Hours",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/working-hours",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "working-hours"
+              ]
+            },
+            "description": "Public, no auth. One entry per weekday (Mon..Sun) with an admin-set startTime/endTime — powers the time range text shown on the lawyer's 'Set availability' screen. Seeded once via `npm run seed:working-hours` (defaults to 10:00 AM - 6:00 PM for every day), then edited per-day from the Admin folder above."
+          }
         }
       ]
     },
@@ -1457,6 +1542,71 @@
               }
             },
             "description": "Dedicated endpoint for just this one field. Bills Audio/Video consultations by the minute."
+          }
+        },
+        {
+          "name": "11. Get My Weekly Availability",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lawyerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/lawyers/me/weekly-availability",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "lawyers",
+                "me",
+                "weekly-availability"
+              ]
+            },
+            "description": "Returns which weekdays (Mon..Sun) this lawyer currently accepts bookings on. Defaults to all 7 until set."
+          }
+        },
+        {
+          "name": "12. Set Weekly Availability (Mon-Fri)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{lawyerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/lawyers/me/weekly-availability",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "lawyers",
+                "me",
+                "weekly-availability"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"availableDays\": [\n    \"Mon\",\n    \"Tue\",\n    \"Wed\",\n    \"Thu\",\n    \"Fri\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Send the full set of days to keep on (not a single-day toggle) — a day left out is blocked from new bookings, and GET /lawyers/:id/availability?date= will show that whole day as unavailable. Empty array is valid (fully off, e.g. on leave). The time range shown next to each day on the 'Set availability' screen comes from GET /working-hours (admin-set, same for every lawyer) — this endpoint only stores which days this lawyer personally works."
           }
         }
       ]

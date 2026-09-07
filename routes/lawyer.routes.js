@@ -8,6 +8,7 @@ const {
   updateConsultationTypeSchema,
   updatePricePerSessionSchema,
   updateCallFeePerMinuteSchema,
+  updateAvailableDaysSchema,
 } = require("../validators/lawyer.validators");
 const { availabilityQuerySchema } = require("../validators/booking.validators");
 const { USER_ROLES } = require("../models/User");
@@ -47,6 +48,21 @@ router.patch(
   requireRole(USER_ROLES.LAWYER),
   validateBody(updateCallFeePerMinuteSchema),
   lawyerController.updateCallFeePerMinute
+);
+
+router.get(
+  "/me/weekly-availability",
+  authenticate,
+  requireRole(USER_ROLES.LAWYER),
+  lawyerController.getMyWeeklyAvailability
+);
+
+router.patch(
+  "/me/weekly-availability",
+  authenticate,
+  requireRole(USER_ROLES.LAWYER),
+  validateBody(updateAvailableDaysSchema),
+  lawyerController.updateMyWeeklyAvailability
 );
 
 router.get("/:id", lawyerController.getLawyerById);

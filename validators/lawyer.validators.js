@@ -1,5 +1,5 @@
 const { z } = require("zod");
-const { AVAILABILITY_STATUS } = require("../models/LawyerProfile");
+const { AVAILABILITY_STATUS, DAYS_OF_WEEK } = require("../models/LawyerProfile");
 
 const listLawyersQuerySchema = z.object({
   practiceArea: z.string().trim().min(1).optional(),
@@ -45,10 +45,17 @@ const updateCallFeePerMinuteSchema = z.object({
   callFeePerMinute: z.coerce.number().positive("callFeePerMinute must be greater than 0"),
 });
 
+// Empty array is allowed on purpose — a lawyer going fully on leave for a
+// while is a real case, not a mistake.
+const updateAvailableDaysSchema = z.object({
+  availableDays: z.array(z.enum(DAYS_OF_WEEK)).max(7, "At most 7 days"),
+});
+
 module.exports = {
   listLawyersQuerySchema,
   updateMyLawyerProfileSchema,
   updateConsultationTypeSchema,
   updatePricePerSessionSchema,
   updateCallFeePerMinuteSchema,
+  updateAvailableDaysSchema,
 };
