@@ -25,6 +25,8 @@ const userSchema = new mongoose.Schema(
     isProfileComplete: { type: Boolean, default: false },
     profilePhotoUrl: { type: String, default: null },
     profilePhotoPublicId: { type: String, default: null, select: false },
+    // Credited only via a verified Razorpay recharge — see WalletTransaction.
+    walletBalance: { type: Number, default: 0, min: 0 },
     isBlocked: { type: Boolean, default: false, index: true },
     blockedReason: { type: String, trim: true, default: null },
     blockedAt: { type: Date, default: null },

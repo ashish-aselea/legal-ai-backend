@@ -15,11 +15,11 @@ const STATUS_TABS = [
 
 const STATUS_TONE = { approved: "green", pending: "amber", rejected: "red" };
 
-export default function Lawyers() {
+export default function Lawyers({ params } = {}) {
   const [lawyers, setLawyers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState(params?.initialStatus || "");
   const [search, setSearch] = useState("");
   const [rejectTarget, setRejectTarget] = useState(null);
 

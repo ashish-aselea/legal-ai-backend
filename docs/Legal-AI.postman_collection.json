@@ -1,13 +1,13 @@
 {
   "info": {
     "name": "Legal-AI Backend",
-    "description": "All Legal-AI backend APIs. base_url points to the live Render deployment by default — change it to http://localhost:5000/api/v1 if you're testing against your own machine instead. Run requests top-to-bottom inside each folder — tokens/IDs are captured automatically into collection variables via the Tests tab, so you do not need to copy-paste anything manually.\n\nBefore running Admin requests: an admin account (9000000099) already exists — created via `npm run create:admin -- 9000000099 \"Admin Name\"` on whichever backend you're pointed at.\n\nStatic OTP for every mobile number (dev only) is 123456 (see {{otp}} variable).",
+    "description": "All Legal-AI backend APIs. base_url currently points to http://localhost:5000/api/v1 (working locally together in the office) — change it to https://legal-ai-backend-g86o.onrender.com/api/v1 once you're back on the live deployment. Run requests top-to-bottom inside each folder — tokens/IDs are captured automatically into collection variables via the Tests tab, so you do not need to copy-paste anything manually.\n\nBefore running Admin requests: an admin account (9000000099) already exists — created via `npm run create:admin -- 9000000099 \"Admin Name\"` on whichever backend you're pointed at.\n\nStatic OTP for every mobile number (dev only) is 123456 (see {{otp}} variable).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "base_url",
-      "value": "https://legal-ai-backend-g86o.onrender.com/api/v1"
+      "value": "http://localhost:5000/api/v1"
     },
     {
       "key": "otp",
@@ -79,6 +79,18 @@
     },
     {
       "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "walletAmountId",
+      "value": ""
+    },
+    {
+      "key": "rzpOrderId",
+      "value": ""
+    },
+    {
+      "key": "callSessionId",
       "value": ""
     }
   ],
@@ -1208,6 +1220,535 @@
               }
             },
             "description": "URL day is mon | tue | wed | thu | fri | sat | sun — one endpoint per day, each set independently. This is purely a display time range for the 'Set availability' screen — it is NOT linked to the fixed booking TIME_SLOTS (10:00 AM, 11:30 AM, 2:00 PM, 4:30 PM). Changes are visible immediately on the public GET /working-hours below."
+          }
+        },
+        {
+          "name": "14. Restore Saturday Working Hours",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/working-hours/sat",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "working-hours",
+                "sat"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startTime\": \"10:00 AM\",\n  \"endTime\": \"6:00 PM\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Puts Saturday back to the seeded default so re-running this collection doesn't drift the shared database."
+          }
+        },
+        {
+          "name": "15. List Wallet Preset Amounts (admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/wallet/preset-amounts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "wallet",
+                "preset-amounts"
+              ]
+            },
+            "description": "Includes inactive amounts too, unlike the public list below."
+          }
+        },
+        {
+          "name": "16. Add Wallet Preset Amount",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/wallet/preset-amounts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "wallet",
+                "preset-amounts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 25000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "New amounts appear in GET /wallet/preset-amounts (public) immediately, sorted ascending."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json().data;",
+                  "  if (data && data.presetAmount) pm.collectionVariables.set('walletAmountId', data.presetAmount.id);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "17. Deactivate Wallet Preset Amount (soft delete)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/wallet/preset-amounts/{{walletAmountId}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "wallet",
+                "preset-amounts",
+                "{{walletAmountId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Deactivated amounts disappear from the public quick-select list but the record stays (can be reactivated)."
+          }
+        },
+        {
+          "name": "18. Get Payment Settings (Razorpay)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/settings/payment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "settings",
+                "payment"
+              ]
+            },
+            "description": "razorpayKeySecret is never returned by any endpoint, even to admin — only isRazorpayKeySecretSet (true/false) tells you whether one is stored."
+          }
+        },
+        {
+          "name": "19. Set Payment Settings (Razorpay test keys)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/settings/payment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "settings",
+                "payment"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpayKeyId\": \"rzp_test_your_key_id\",\n  \"razorpayKeySecret\": \"your_test_key_secret\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "⚠️ Replace the placeholder values below with your real Razorpay test keys before running this — the Wallet folder's Create/Verify Recharge requests need real ones to actually hit Razorpay. Running this with the placeholders as-is will OVERWRITE any real credentials already configured, breaking recharges until an admin sets the real ones again. Either field can be sent alone to rotate just that one."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wallet",
+      "item": [
+        {
+          "name": "1. List Preset Amounts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/wallet/preset-amounts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "wallet",
+                "preset-amounts"
+              ]
+            },
+            "description": "Public, no auth. Powers the quick-select amount buttons on the 'My Wallet' add-money screen. Admin-managed — see the Admin folder to add/deactivate amounts."
+          }
+        },
+        {
+          "name": "2. Get Payment Config (Razorpay key id)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/wallet/payment-config",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "wallet",
+                "payment-config"
+              ]
+            },
+            "description": "Public, no auth. Gives the app just the Razorpay key id (never the secret — that never leaves the server) so it can initialize the Checkout SDK, e.g. at app startup, without needing to create an order first. isPaymentGatewayConfigured is false if the admin hasn't set credentials yet."
+          }
+        },
+        {
+          "name": "3. Get Wallet Balance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/wallet",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "wallet"
+              ]
+            },
+            "description": "Run the 'Auth - User' folder first so {{userToken}} is set."
+          }
+        },
+        {
+          "name": "4. Create Recharge Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/wallet/recharge/create-order",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "wallet",
+                "recharge",
+                "create-order"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 500\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Creates a real Razorpay order (test mode) and returns { orderId, amount, currency, keyId }. Hand these to the app's Razorpay Checkout SDK — the 'Payment Information' screen (GPay/UPI/Cards) is Razorpay's own UI, not ours. Requires Razorpay credentials to already be set via Admin > Set Payment Settings, otherwise this returns 503."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json().data;",
+                  "  if (data && data.orderId) pm.collectionVariables.set('rzpOrderId', data.orderId);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5. Verify Recharge Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/wallet/recharge/verify",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "wallet",
+                "recharge",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpay_order_id\": \"{{rzpOrderId}}\",\n  \"razorpay_payment_id\": \"pay_xxxxxxxxxxxxxx\",\n  \"razorpay_signature\": \"signature_from_checkout_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "In the real app, Razorpay Checkout hands back razorpay_payment_id and razorpay_signature once the user actually pays — Postman can't complete that UI step, so this exact call will return 400 (signature mismatch) unless you paste in real values from a completed test payment. The server recomputes the signature itself using the key secret (never exposed by any API) and only credits the wallet if it matches — this is what actually verified the flow, not this Postman request in isolation."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Calls (ZEGOCLOUD voice/video)",
+      "item": [
+        {
+          "name": "1. Get Zego Kit Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/calls/zego-token",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "calls",
+                "zego-token"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Run 'Auth - User' first so {{userToken}} is set. Returns the Kit token the app initializes ZegoUIKitPrebuiltCallInvitationService with — never a raw AppSign/ServerSecret."
+          }
+        },
+        {
+          "name": "2. Can Start Call",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/calls/can-start",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "calls",
+                "can-start"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lawyerId\": \"{{lawyerProfileId}}\",\n  \"mode\": \"voice\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "mode: 'voice' | 'video'. Run 'Auth - Lawyer' first so {{lawyerProfileId}} is set, and give that lawyer a callFeePerMinute via PATCH /lawyers/me/call-fee-per-minute — otherwise this returns allowed:false, reason:'no_call_rate_set'. Always HTTP 200 even when not allowed; check data.allowed."
+          }
+        },
+        {
+          "name": "3. Register Call",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/calls/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "calls",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lawyerId\": \"{{lawyerProfileId}}\",\n  \"mode\": \"voice\",\n  \"zegoRoomId\": \"postman_test_room_{{$timestamp}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Called right before sending the ZEGOCLOUD invitation. Creates a 'pending' CallSession — billing does NOT start here. It starts only once ZEGOCLOUD's own room_create webhook confirms the call actually connected (see the backend doc's §4) — this endpoint just registers which room to watch for."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "  const data = pm.response.json().data;",
+                  "  if (data && data.callSessionId) pm.collectionVariables.set('callSessionId', data.callSessionId);",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4. Get Call Tick (live billing)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/calls/tick/{{callSessionId}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "calls",
+                "tick",
+                "{{callSessionId}}"
+              ]
+            },
+            "description": "Poll this every ~5s while a call is on screen. Right after step 3, expect status:'pending' — it only flips to 'ongoing' once the real ZEGOCLOUD room_create webhook arrives, which Postman can't trigger (that requires an actual call to connect, or a hand-crafted signed webhook — see the backend doc's §4 for the signature algorithm if you need to simulate one directly against the server)."
           }
         }
       ]

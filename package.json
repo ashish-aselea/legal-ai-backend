@@ -8,7 +8,8 @@
     "dev": "nodemon server.js",
     "create:admin": "node scripts/createAdmin.js",
     "seed:practice-areas": "node scripts/seedPracticeAreas.js",
-    "seed:working-hours": "node scripts/seedWorkingHours.js"
+    "seed:working-hours": "node scripts/seedWorkingHours.js",
+    "seed:wallet-amounts": "node scripts/seedWalletAmounts.js"
   },
   "keywords": [
     "legal-ai",
@@ -25,6 +26,7 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.5.1",
     "multer": "^2.3.0",
+    "razorpay": "^2.9.8",
     "zod": "^4.5.4"
   },
   "devDependencies": {

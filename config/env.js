@@ -14,6 +14,9 @@ const env = {
   cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME || "",
   cloudinaryApiKey: process.env.CLOUDINARY_API_KEY || "",
   cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET || "",
+  zegoAppId: parseInt(process.env.ZEGO_APP_ID || "0", 10),
+  zegoServerSecret: process.env.ZEGO_SERVER_SECRET || "",
+  zegoCallbackSecret: process.env.ZEGO_CALLBACK_SECRET || "",
 };
 
 module.exports = { env };

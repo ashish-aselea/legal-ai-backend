@@ -3,6 +3,8 @@ const adminController = require("../controllers/admin.controller");
 const practiceAreaController = require("../controllers/practiceArea.controller");
 const dashboardController = require("../controllers/dashboard.controller");
 const workingHoursController = require("../controllers/workingHours.controller");
+const walletAmountController = require("../controllers/walletAmount.controller");
+const paymentSettingsController = require("../controllers/paymentSettings.controller");
 const { authenticate, requireRole } = require("../middleware/auth");
 const { validateBody } = require("../middleware/validate");
 const { rejectLawyerSchema } = require("../validators/auth.validators");
@@ -12,6 +14,11 @@ const {
 } = require("../validators/practiceArea.validators");
 const { blockUserSchema } = require("../validators/user.validators");
 const { updateWorkingHoursSchema } = require("../validators/workingHours.validators");
+const {
+  createWalletAmountSchema,
+  updateWalletAmountSchema,
+} = require("../validators/walletAmount.validators");
+const { updatePaymentSettingsSchema } = require("../validators/paymentSettings.validators");
 const { USER_ROLES } = require("../models/User");
 
 const router = express.Router();
@@ -54,6 +61,25 @@ router.patch(
   "/working-hours/:day",
   validateBody(updateWorkingHoursSchema),
   workingHoursController.updateWorkingHours
+);
+
+router.get("/wallet/preset-amounts", walletAmountController.listAllWalletAmounts);
+router.post(
+  "/wallet/preset-amounts",
+  validateBody(createWalletAmountSchema),
+  walletAmountController.createWalletAmount
+);
+router.patch(
+  "/wallet/preset-amounts/:id",
+  validateBody(updateWalletAmountSchema),
+  walletAmountController.updateWalletAmount
+);
+
+router.get("/settings/payment", paymentSettingsController.getPaymentSettings);
+router.patch(
+  "/settings/payment",
+  validateBody(updatePaymentSettingsSchema),
+  paymentSettingsController.updatePaymentSettings
 );
 
 module.exports = router;

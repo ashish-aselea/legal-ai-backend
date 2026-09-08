@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
-import { CheckCircle2, XCircle, ShieldCheck } from "lucide-react";
+import { CheckCircle2, XCircle, ShieldCheck, History } from "lucide-react";
 import { api } from "../lib/api";
 import { Avatar, Spinner, EmptyState, PageHeader, ReasonModal, formatDate } from "../components/ui/Shared";
 
-export default function Verifications() {
+export default function Verifications({ navigateTo } = {}) {
   const [lawyers, setLawyers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -46,10 +46,19 @@ export default function Verifications() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-50 px-6 py-6">
-      <PageHeader
-        title="Verifications"
-        subtitle={`${lawyers.length} lawyer application${lawyers.length === 1 ? "" : "s"} waiting for review.`}
-      />
+      <div className="mb-5 flex items-start justify-between">
+        <PageHeader
+          title="Verifications"
+          subtitle={`${lawyers.length} lawyer application${lawyers.length === 1 ? "" : "s"} waiting for review.`}
+        />
+        <button
+          onClick={() => navigateTo?.("lawyers", { initialStatus: "approved" })}
+          className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-[12.5px] font-medium text-slate-600 hover:bg-slate-50"
+        >
+          <History size={14} />
+          View approved lawyers
+        </button>
+      </div>
 
       {error && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

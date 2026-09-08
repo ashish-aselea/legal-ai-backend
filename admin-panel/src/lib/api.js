@@ -54,4 +54,26 @@ export const api = {
     request(`/admin/lawyers/${id}/reject`, { method: "PATCH", body: { rejectionReason } }),
 
   listConsultations: (params) => request(`/admin/consultations${qs(params)}`),
+
+  listWorkingHours: () => request("/admin/working-hours"),
+  updateWorkingHours: (day, startTime, endTime) =>
+    request(`/admin/working-hours/${day.toLowerCase()}`, {
+      method: "PATCH",
+      body: { startTime, endTime },
+    }),
+
+  listWalletAmounts: () => request("/admin/wallet/preset-amounts"),
+  createWalletAmount: (amount) =>
+    request("/admin/wallet/preset-amounts", { method: "POST", body: { amount } }),
+  updateWalletAmount: (id, changes) =>
+    request(`/admin/wallet/preset-amounts/${id}`, { method: "PATCH", body: changes }),
+
+  getPaymentSettings: () => request("/admin/settings/payment"),
+  updatePaymentSettings: (changes) =>
+    request("/admin/settings/payment", { method: "PATCH", body: changes }),
+
+  listPracticeAreas: () => request("/admin/practice-areas"),
+  createPracticeArea: (name) => request("/admin/practice-areas", { method: "POST", body: { name } }),
+  updatePracticeArea: (id, changes) =>
+    request(`/admin/practice-areas/${id}`, { method: "PATCH", body: changes }),
 };

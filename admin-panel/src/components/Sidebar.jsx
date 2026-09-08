@@ -2,7 +2,7 @@ import {
   Scale, LayoutDashboard, Users, UserCheck, Phone, ShieldCheck,
   MessageSquare, FileSearch, Gavel, BookOpen, LayoutGrid, FileText,
   AlertTriangle, MapPin, Share2, Briefcase, Bell, BarChart3,
-  Settings, UserCog, ScrollText, ChevronLeft,
+  Settings, UserCog, ScrollText, ChevronLeft, Clock, Wallet,
 } from "lucide-react";
 
 // Items without a backend yet are marked so the UI can show them as inactive
@@ -44,6 +44,8 @@ const SECTIONS = [
     label: "Manage",
     items: [
       { key: "practice-areas", label: "Practice Areas", icon: Briefcase, ready: true },
+      { key: "working-hours", label: "Working Hours", icon: Clock, ready: true },
+      { key: "wallet-amounts", label: "Wallet Amounts", icon: Wallet, ready: true },
       { key: "notifications", label: "Notifications", icon: Bell },
       { key: "analytics", label: "Analytics", icon: BarChart3 },
     ],
@@ -51,7 +53,7 @@ const SECTIONS = [
   {
     label: "System",
     items: [
-      { key: "settings", label: "Settings", icon: Settings },
+      { key: "settings", label: "Settings", icon: Settings, ready: true },
       { key: "admin-users", label: "Admin Users", icon: UserCog },
       { key: "audit-logs", label: "Audit Logs", icon: ScrollText },
     ],

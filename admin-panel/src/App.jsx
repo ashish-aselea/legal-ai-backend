@@ -7,6 +7,10 @@ import Users from "./pages/Users";
 import Lawyers from "./pages/Lawyers";
 import Verifications from "./pages/Verifications";
 import Consultations from "./pages/Consultations";
+import WorkingHours from "./pages/WorkingHours";
+import WalletAmounts from "./pages/WalletAmounts";
+import PracticeAreas from "./pages/PracticeAreas";
+import Settings from "./pages/Settings";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 
@@ -16,12 +20,17 @@ const PAGES = {
   lawyers: Lawyers,
   verifications: Verifications,
   consultations: Consultations,
+  "working-hours": WorkingHours,
+  "wallet-amounts": WalletAmounts,
+  "practice-areas": PracticeAreas,
+  settings: Settings,
 };
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
   const [active, setActive] = useState("dashboard");
+  const [pageParams, setPageParams] = useState({});
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
@@ -46,6 +55,14 @@ export default function App() {
       return;
     }
     setActive(key);
+    setPageParams({});
+  };
+
+  // Lets one page send the user to another with a bit of context, e.g.
+  // Verifications' "View approved lawyers" jumping straight to that tab.
+  const navigateTo = (key, params = {}) => {
+    setActive(key);
+    setPageParams(params);
   };
 
   if (checking) {
@@ -88,7 +105,7 @@ export default function App() {
           </div>
         )}
 
-        <Page user={user} />
+        <Page user={user} navigateTo={navigateTo} params={pageParams} />
       </div>
     </div>
   );
