@@ -4,7 +4,11 @@ const { LawyerProfile, APPROVAL_STATUS } = require("../models/LawyerProfile");
 const { User } = require("../models/User");
 const { Review } = require("../models/Review");
 const { Booking, TIME_SLOTS, BOOKING_STATUS, CONSULTATION_TYPES } = require("../models/Booking");
+const { WorkingHours } = require("../models/WorkingHours");
+const { DAYS_OF_WEEK } = require("../models/LawyerProfile");
 const { dayAbbrForDate } = require("../utils/dayOfWeek");
+
+const DAY_ORDER = DAYS_OF_WEEK.reduce((acc, day, i) => ({ ...acc, [day]: i }), {});
 
 const buildLawyerCard = (profile) => ({
   id: String(profile._id),
@@ -29,18 +33,35 @@ const buildLawyerCard = (profile) => ({
   isKycVerified: profile.approvalStatus === APPROVAL_STATUS.APPROVED,
 });
 
-const buildLawyerDetail = (profile) => ({
-  ...buildLawyerCard(profile),
-  bio: profile.bio,
-  specializations: profile.specializations,
-  languages: profile.languages,
-  consultsCount: profile.consultsCount,
-  casesHandled: profile.casesHandled,
-  // Days this lawyer has toggled on via PATCH /lawyers/me/weekly-availability
-  // — e.g. ["Mon","Tue","Wed","Thu","Fri"]. Pair with GET /working-hours for
-  // the admin-set time range shown next to each day.
-  availableDays: profile.availableDays,
-});
+// Merges the lawyer's own on/off days (LawyerProfile.availableDays) with the
+// admin-set time range for each day (WorkingHours) — so the app gets both in
+// one call instead of having to cross-reference GET /working-hours itself.
+const buildLawyerDetail = async (profile) => {
+  const hoursDocs = await WorkingHours.find({ day: { $in: profile.availableDays } });
+  const hoursByDay = Object.fromEntries(hoursDocs.map((d) => [d.day, d]));
+
+  const availableDays = [...profile.availableDays]
+    .sort((a, b) => DAY_ORDER[a] - DAY_ORDER[b])
+    .map((day) => ({
+      day,
+      startTime: hoursByDay[day]?.startTime ?? null,
+      endTime: hoursByDay[day]?.endTime ?? null,
+    }));
+
+  return {
+    ...buildLawyerCard(profile),
+    bio: profile.bio,
+    specializations: profile.specializations,
+    languages: profile.languages,
+    consultsCount: profile.consultsCount,
+    casesHandled: profile.casesHandled,
+    // Only the days this lawyer has toggled on via PATCH
+    // /lawyers/me/weekly-availability, each paired with the admin-set time
+    // range for that day (GET /working-hours) — e.g. a lawyer who only
+    // enabled Mon/Tue gets exactly those two, with their times.
+    availableDays,
+  };
+};
 
 // GET /api/v1/lawyers?practiceArea=Criminal&search=jaipur
 exports.listLawyers = asyncHandler(async (req, res) => {
@@ -85,7 +106,7 @@ exports.getLawyerById = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     status: "success",
-    data: { lawyer: buildLawyerDetail(profile) },
+    data: { lawyer: await buildLawyerDetail(profile) },
   });
 });
 
@@ -183,7 +204,7 @@ exports.updateMyLawyerProfile = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     status: "success",
-    data: { lawyer: buildLawyerDetail(profile) },
+    data: { lawyer: await buildLawyerDetail(profile) },
   });
 });
 
@@ -220,7 +241,7 @@ exports.updateConsultationTypeAvailability = asyncHandler(async (req, res) => {
   res.status(200).json({
     status: "success",
     message: `${type} consultations ${req.body.available ? "enabled" : "disabled"}`,
-    data: { lawyer: buildLawyerDetail(profile) },
+    data: { lawyer: await buildLawyerDetail(profile) },
   });
 });
 
@@ -239,7 +260,7 @@ const setOwnProfileField = async (req, res, field, message) => {
   res.status(200).json({
     status: "success",
     message,
-    data: { lawyer: buildLawyerDetail(profile) },
+    data: { lawyer: await buildLawyerDetail(profile) },
   });
 };
 

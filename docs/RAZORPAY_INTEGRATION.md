@@ -1,6 +1,6 @@
-# Razorpay Wallet Recharge — Flutter Integration Guide
+# Razorpay Integration — Flutter Integration Guide
 
-This document explains how to wire the "My Wallet → Add Money" screen to the backend and to Razorpay Checkout. It covers every API you need, in the order you call them, with full request/response bodies.
+This document explains how to wire wallet recharges and consultation booking payments to the backend and to Razorpay Checkout. Both use the exact same order-create → Checkout → verify mechanics, just on different resources — see §1–§5 for wallet recharge, §6 for booking payment.
 
 Base URL: `{{base_url}}` = `http://localhost:5000/api/v1` (local) or `https://legal-ai-backend-g86o.onrender.com/api/v1` (live).
 
@@ -207,3 +207,59 @@ The credentials currently configured (via Admin → Settings) are **Razorpay tes
 - Everything else (order creation, signature verification, wallet crediting) behaves exactly like production.
 
 When the app is ready to go live, the admin swaps the test keys for live keys (`rzp_live_...`) in the same Settings page — no app changes needed on the Flutter side, since the app never hardcodes the key, it always fetches it from `/wallet/payment-config` or the `create-order` response.
+
+---
+
+## 6. Booking payment (consultation booking)
+
+Same mechanics as the wallet recharge above (real Razorpay order, Checkout, server-side signature verification) — applied to a booking instead of a wallet top-up. Unlike the wallet flow, creating the booking **and** creating its payment order happen in one call.
+
+### Step 1 — Create the booking (this also creates the payment order)
+
+**POST** `{{base_url}}/bookings`
+Header: `Authorization: Bearer <userToken>`
+Body:
+```json
+{ "lawyerId": "6a995abc8fb97804251d3550", "consultationType": "Chat", "date": "2026-09-10", "timeSlot": "10:00 AM" }
+```
+
+Response `201`:
+```json
+{
+  "status": "success",
+  "message": "Booking created. Complete the payment to confirm it.",
+  "data": {
+    "booking": { "id": "6aa1614e91910ef53aa76b8b", "lawyer": "6a995abc8fb97804251d3550", "consultationType": "Chat", "date": "2026-09-10", "timeSlot": "10:00 AM", "amount": 700, "status": "pending_payment", "createdAt": "2026-09-09T13:38:22.586Z" },
+    "payment": { "orderId": "order_TZxQe9gNfY4M6w", "amount": 700, "currency": "INR", "keyId": "rzp_test_TZQxfuU9KSwZns" }
+  }
+}
+```
+If the Razorpay order fails to create (gateway not configured, Razorpay error), the booking is rolled back too — you won't end up with a `pending_payment` booking stuck holding the slot with no way to pay for it. Just show the error and let the user retry.
+
+### Step 2 — Open Razorpay Checkout
+
+`key: payment.keyId`, `amount: payment.amount * 100`, `order_id: payment.orderId`.
+
+### Step 3 — Confirm
+
+**PATCH** `{{base_url}}/bookings/:bookingId/confirm-payment`
+Header: `Authorization: Bearer <userToken>`
+Body (from `PaymentSuccessResponse`, same as the wallet flow):
+```json
+{
+  "razorpay_order_id": "order_TZxGkc4JC2bDcA",
+  "razorpay_payment_id": "pay_xxxxxxxxxxxxxx",
+  "razorpay_signature": "abc123...signature_from_razorpay"
+}
+```
+
+Response `200` — booking confirmed:
+```json
+{
+  "status": "success",
+  "message": "Payment successful, your consultation is confirmed",
+  "data": { "booking": { "id": "...", "lawyer": { "id": "...", "name": "...", "practiceArea": "..." }, "consultationType": "Chat", "date": "2026-09-10", "timeSlot": "10:00 AM", "amount": 600, "status": "confirmed", "createdAt": "..." } }
+}
+```
+
+Errors: `400` signature mismatch, order-id mismatch, or booking already confirmed/cancelled; `404` booking not found or belongs to a different user.

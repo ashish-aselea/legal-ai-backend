@@ -90,6 +90,10 @@
       "value": ""
     },
     {
+      "key": "bookingOrderId",
+      "value": ""
+    },
+    {
       "key": "callSessionId",
       "value": ""
     }
@@ -2217,7 +2221,7 @@
           }
         },
         {
-          "name": "2. Create Booking",
+          "name": "2. Create Booking (also creates the payment order)",
           "request": {
             "method": "POST",
             "header": [
@@ -2248,7 +2252,7 @@
                 }
               }
             },
-            "description": "consultationType: 'Chat' | 'Audio' | 'Video'. Booking is created with status 'pending_payment'; the lawyer must have a pricePerSession set first."
+            "description": "consultationType: 'Chat' | 'Audio' | 'Video'. Booking is created with status 'pending_payment', AND a real Razorpay order (test mode) is created in the same call — response has both data.booking and data.payment (orderId, amount, currency, keyId). One request instead of two: create booking + create order used to be separate endpoints, now combined. Requires Razorpay credentials to already be set via Admin > Set Payment Settings, otherwise 503 (and the booking is rolled back, not left stuck in pending_payment)."
           },
           "event": [
             {
@@ -2259,6 +2263,7 @@
                   "(function () {",
                   "  const data = pm.response.json().data;",
                   "  if (data && data.booking) pm.collectionVariables.set('bookingId', data.booking.id);",
+                  "  if (data && data.payment) pm.collectionVariables.set('bookingOrderId', data.payment.orderId);",
                   "})();"
                 ]
               }
@@ -2266,7 +2271,7 @@
           ]
         },
         {
-          "name": "3. Confirm Payment (stub)",
+          "name": "3. Confirm Payment",
           "request": {
             "method": "PATCH",
             "header": [
@@ -2290,7 +2295,16 @@
                 "confirm-payment"
               ]
             },
-            "description": "Stands in for the real payment gateway callback until Razorpay (or similar) is integrated. Flips status pending_payment -> confirmed."
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpay_order_id\": \"{{bookingOrderId}}\",\n  \"razorpay_payment_id\": \"pay_xxxxxxxxxxxxxx\",\n  \"razorpay_signature\": \"signature_from_checkout_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "In the real app, Razorpay Checkout hands back razorpay_payment_id and razorpay_signature once the user actually pays — Postman can't complete that UI step, so this exact call returns 400 (signature mismatch) unless you paste in real values from a completed test payment. The server recomputes the signature itself using the key secret (never exposed by any API) and only confirms the booking if it matches."
           }
         }
       ]

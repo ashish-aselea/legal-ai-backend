@@ -50,6 +50,11 @@ const bookingSchema = new mongoose.Schema(
       default: BOOKING_STATUS.PENDING_PAYMENT,
       index: true,
     },
+    // Set by POST /bookings/:id/create-order, then filled in as the payment
+    // completes and gets verified — same pattern as WalletTransaction.
+    razorpayOrderId: { type: String, default: null },
+    razorpayPaymentId: { type: String, default: null },
+    razorpaySignature: { type: String, default: null },
   },
   { timestamps: true }
 );
