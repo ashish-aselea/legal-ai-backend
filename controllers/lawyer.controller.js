@@ -8,6 +8,10 @@ const { dayAbbrForDate } = require("../utils/dayOfWeek");
 
 const buildLawyerCard = (profile) => ({
   id: String(profile._id),
+  // The User document's _id — this is the identity a lawyer registers with in
+  // ZEGOCLOUD (via GET /auth/me → data.user.id), NOT the LawyerProfile id
+  // above. The calling feature needs this one to target the right person.
+  userId: String(profile.user._id),
   name: profile.user.name,
   profilePhotoUrl: profile.user.profilePhotoUrl,
   iAmA: profile.iAmA,
