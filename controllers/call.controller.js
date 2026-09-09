@@ -82,6 +82,7 @@ const checkCallAllowed = async (callerId, lawyerId, mode) => {
 exports.canStartCall = asyncHandler(async (req, res) => {
   const { lawyerId, mode } = req.body;
   const result = await checkCallAllowed(req.user.id, lawyerId, mode);
+  console.log(`[can-start] caller=${req.user.id} lawyerId=${lawyerId} mode=${mode} -> ${JSON.stringify(result)}`);
 
   res.status(200).json({ status: "success", data: result });
 });
@@ -112,9 +113,11 @@ exports.getZegoToken = asyncHandler(async (req, res) => {
 // has something to match against and turn into an ongoing, billed call.
 exports.registerCall = asyncHandler(async (req, res) => {
   const { lawyerId, mode, zegoRoomId } = req.body;
+  console.log(`[register] caller=${req.user.id} lawyerId=${lawyerId} mode=${mode} zegoRoomId="${zegoRoomId}"`);
 
   const check = await checkCallAllowed(req.user.id, lawyerId, mode);
   if (!check.allowed) {
+    console.log(`[register] REJECTED — ${check.reason}: ${check.message}`);
     throw new AppError(check.message, 409);
   }
 
@@ -131,6 +134,7 @@ exports.registerCall = asyncHandler(async (req, res) => {
     callFeePerMinute: check.callFeePerMinute,
     status: CALL_STATUS.PENDING,
   });
+  console.log(`[register] created callSessionId=${callSession._id} for zegoRoomId="${zegoRoomId}", waiting for room_create webhook`);
 
   res.status(201).json({
     status: "success",
@@ -199,9 +203,11 @@ async function endCallSettlement(callSessionId, forcedReason = null) {
 // POST /api/v1/calls/zego-webhook  (public — ZEGOCLOUD calls this, not our users)
 exports.zegoWebhook = asyncHandler(async (req, res) => {
   const { event, timestamp, nonce, signature, room_id: roomId } = req.body;
+  console.log(`[zego-webhook] received event="${event}" roomId="${roomId}" body=${JSON.stringify(req.body)}`);
 
   if (!verifyZegoWebhookSignature({ nonce, timestamp, signature })) {
     // Wrong signature = not really ZEGOCLOUD. Don't leak *why* — just refuse.
+    console.log(`[zego-webhook] REJECTED — signature did not match for roomId="${roomId}"`);
     return res.status(401).json({ status: "error", message: "Invalid signature" });
   }
 
@@ -212,6 +218,9 @@ exports.zegoWebhook = asyncHandler(async (req, res) => {
       callSession.startedAt = new Date();
       await callSession.save();
       startBillingLoop(callSession);
+      console.log(`[zego-webhook] room_create matched callSessionId=${callSession._id} — billing started`);
+    } else {
+      console.log(`[zego-webhook] room_create — NO pending CallSession found for roomId="${roomId}" (was /calls/register ever called with this exact zegoRoomId?)`);
     }
   } else if (event === "room_close") {
     const callSession = await CallSession.findOne({
@@ -220,6 +229,9 @@ exports.zegoWebhook = asyncHandler(async (req, res) => {
     });
     if (callSession) {
       await endCallSettlement(callSession._id);
+      console.log(`[zego-webhook] room_close matched callSessionId=${callSession._id} — call settled`);
+    } else {
+      console.log(`[zego-webhook] room_close — no matching pending/ongoing CallSession for roomId="${roomId}" (already settled, or never registered)`);
     }
   }
 
