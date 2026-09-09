@@ -36,6 +36,10 @@ const buildLawyerDetail = (profile) => ({
   languages: profile.languages,
   consultsCount: profile.consultsCount,
   casesHandled: profile.casesHandled,
+  // Days this lawyer has toggled on via PATCH /lawyers/me/weekly-availability
+  // — e.g. ["Mon","Tue","Wed","Thu","Fri"]. Pair with GET /working-hours for
+  // the admin-set time range shown next to each day.
+  availableDays: profile.availableDays,
 });
 
 // GET /api/v1/lawyers?practiceArea=Criminal&search=jaipur
