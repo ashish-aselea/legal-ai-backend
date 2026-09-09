@@ -8,7 +8,11 @@ const { verifyZegoWebhookSignature } = require("../utils/zegoWebhook");
 const { env } = require("../config/env");
 
 const TOKEN_TTL_SECONDS = 3600;
-const PENDING_RING_TIMEOUT_MS = 3 * 60 * 1000; // no room_create within this = treat as unanswered
+// Safety net only — the app should call POST /calls/end immediately on
+// cancel/decline/no-answer (see endCallClientReported below), so this reaper
+// rarely needs to fire. Kept short so a call the app somehow never reported
+// still clears out reasonably fast instead of sitting "pending" for ages.
+const PENDING_RING_TIMEOUT_MS = 45 * 1000;
 const STALE_ONGOING_CEILING_MS = 4 * 60 * 60 * 1000; // webhook never arrived to end it
 
 // only lasts minutes, and a server restart mid-call is already handled by the
@@ -198,6 +202,37 @@ async function endCallSettlement(callSessionId, forcedReason = null) {
   await callSession.save();
   return callSession;
 }
+
+// POST /api/v1/calls/end
+// Client-reported "this attempt is over" — for the case ZEGOCLOUD never even
+// sends a room_create webhook at all (declined, no answer, cancelled before
+// pickup: no room ever formed, so there is nothing for ZEGOCLOUD to report).
+// Safe to expose broadly: this only ever *ends* a session using our own
+// server-tracked elapsedSeconds (endCallSettlement, same as the webhook path)
+// — a caller calling this early can't inflate or dodge billing, only speed up
+// settlement of a session that's already over. Billing itself still only ever
+// *starts* from the trustworthy room_create webhook, never from this.
+exports.endCallClientReported = asyncHandler(async (req, res) => {
+  const { callSessionId, reason } = req.body;
+
+  const callSession = await CallSession.findById(callSessionId);
+  if (!callSession || String(callSession.caller) !== req.user.id) {
+    throw new AppError("Call session not found", 404);
+  }
+
+  console.log(`[end] client-reported end for callSessionId=${callSessionId}, reason="${reason || "unspecified"}"`);
+  const settled = await endCallSettlement(callSessionId, reason || "client_reported_end");
+  const walletBalance = await getWalletBalance(req.user.id);
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      durationSeconds: settled.durationSeconds,
+      totalCost: settled.totalCost,
+      callerNewBalance: walletBalance,
+    },
+  });
+});
 
 // POST /api/v1/calls/zego-webhook  (public — ZEGOCLOUD calls this, not our users)
 exports.zegoWebhook = asyncHandler(async (req, res) => {

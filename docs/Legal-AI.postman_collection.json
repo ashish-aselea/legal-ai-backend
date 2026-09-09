@@ -1750,6 +1750,42 @@
             },
             "description": "Poll this every ~5s while a call is on screen. Right after step 3, expect status:'pending' — it only flips to 'ongoing' once the real ZEGOCLOUD room_create webhook arrives, which Postman can't trigger (that requires an actual call to connect, or a hand-crafted signed webhook — see the backend doc's §4 for the signature algorithm if you need to simulate one directly against the server)."
           }
+        },
+        {
+          "name": "5. End Call (client-reported)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/calls/end",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "calls",
+                "end"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"callSessionId\": \"{{callSessionId}}\",\n  \"reason\": \"no_answer\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Call this immediately when a call is declined, unanswered, or cancelled before pickup — cases where ZEGOCLOUD never creates a room, so no webhook would ever arrive to end it otherwise. Always bills ₹0 in that case. Safe to call even for a call that DID connect (settles using real elapsed time, same as the webhook path) and safe to call twice (idempotent)."
+          }
         }
       ]
     },

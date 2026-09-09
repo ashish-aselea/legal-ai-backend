@@ -12,4 +12,9 @@ const registerCallSchema = z.object({
   zegoRoomId: z.string().trim().min(1, "zegoRoomId is required"),
 });
 
-module.exports = { canStartCallSchema, registerCallSchema };
+const endCallSchema = z.object({
+  callSessionId: z.string().trim().min(1, "callSessionId is required"),
+  reason: z.string().trim().max(100).optional(),
+});
+
+module.exports = { canStartCallSchema, registerCallSchema, endCallSchema };

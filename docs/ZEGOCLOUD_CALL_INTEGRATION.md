@@ -154,22 +154,49 @@ Response `200` — call has ended (**stop polling once you see this**):
 
 ---
 
-## 6. When the call ends (Kit's own `onCallEnd` event)
+## 6. If the call never connects — declined, no answer, or cancelled before pickup
 
-You don't need to call anything to *end* billing — that happens automatically once ZEGOCLOUD's server confirms the room closed (usually within a second or two of the Kit's own `onCallEnd` firing locally). Just:
+**This is a separate case from a normal call ending, and you must call an endpoint for it.** If the callee never joins, ZEGOCLOUD never creates a room — which means it never sends `room_create` or `room_close` either. Without this call, the backend has no way to know the attempt is over, and `/calls/tick` would keep showing `"pending"` (there's a 45-second server-side safety timeout that eventually clears it, but don't rely on that — call this immediately so the UI updates right away).
+
+Call this the moment any of these happen:
+- The Kit reports the callee declined the call
+- The Kit's own ring/no-answer timeout fires
+- The caller cancels their own outgoing call before the callee picks up
+
+**POST** `{{base_url}}/calls/end`
+Header: `Authorization: Bearer <userToken>`
+Body:
+```json
+{ "callSessionId": "665f1a2b3c4d5e6f7a8b9c0d", "reason": "no_answer" }
+```
+`reason` is free text for your own reference (e.g. `no_answer`, `declined`, `cancelled_by_caller`) — not used for billing.
+
+Response `200` — always zero cost, since no room ever connected:
+```json
+{ "status": "success", "data": { "durationSeconds": 0, "totalCost": 0, "callerNewBalance": 100 } }
+```
+
+Safe to call even if you're not sure whether the call actually connected — if a room *did* end up connecting, this settles it correctly using the real elapsed time instead of assuming zero (same math the webhook path uses), so there's no risk of under- or over-billing either way. Safe to call twice too (a second call just returns the already-settled numbers).
+
+---
+
+## 7. When the call ends normally (Kit's own `onCallEnd` event, after it connected)
+
+You don't need to call anything to *end* billing here — that happens automatically once ZEGOCLOUD's server confirms the room closed (usually within a second or two of the Kit's own `onCallEnd` firing locally). Just:
 
 1. Stop polling `/calls/tick`.
-2. Do one final `GET /calls/tick/:callSessionId` — it should already show `status: "ended"` with the authoritative final numbers. If it still says `"ongoing"`, wait ~2s and poll once more (there's a brief window between the call actually ending and ZEGOCLOUD's webhook reaching the backend).
+2. Do one final `GET /calls/tick/:callSessionId` — it should already show `status: "ended"` with the authoritative final numbers. If it still says `"ongoing"`, wait ~2s and poll once more (there's a brief window between the call actually ending and ZEGOCLOUD's webhook reaching the backend). If it's been a few seconds and it's still not `"ended"`, fall back to calling `POST /calls/end` from §6 — it settles correctly either way.
 3. Show the post-call summary from that response's `ended` object — `durationSeconds`, `totalCost`, `callerNewBalance`. Don't compute these client-side; the backend's numbers are authoritative (billing runs off wall-clock time and real debits, not anything the app tracked locally).
 
 ---
 
-## 7. Full flow at a glance
+## 8. Full flow at a glance
 
 ```
 1. App start/login → POST /calls/zego-token → init the Kit
 2. User taps "Call" → POST /calls/can-start → show/hide the button accordingly
 3. User confirms → POST /calls/register → then send the ZEGOCLOUD invitation
 4. While call screen is open → poll GET /calls/tick/:id every ~5s
-5. Kit's onCallEnd fires → poll /calls/tick once more for final numbers → show summary
+5a. Call connects, then ends normally → Kit's onCallEnd fires → poll /calls/tick once more → show summary
+5b. Call never connects (declined/no answer/cancelled) → POST /calls/end immediately → show summary (always ₹0)
 ```

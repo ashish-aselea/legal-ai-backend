@@ -2,7 +2,7 @@ const express = require("express");
 const callController = require("../controllers/call.controller");
 const { authenticate } = require("../middleware/auth");
 const { validateBody } = require("../middleware/validate");
-const { canStartCallSchema, registerCallSchema } = require("../validators/call.validators");
+const { canStartCallSchema, registerCallSchema, endCallSchema } = require("../validators/call.validators");
 
 const router = express.Router();
 
@@ -13,5 +13,6 @@ router.post("/can-start", authenticate, validateBody(canStartCallSchema), callCo
 router.post("/zego-token", authenticate, callController.getZegoToken);
 router.post("/register", authenticate, validateBody(registerCallSchema), callController.registerCall);
 router.get("/tick/:callSessionId", authenticate, callController.getCallTick);
+router.post("/end", authenticate, validateBody(endCallSchema), callController.endCallClientReported);
 
 module.exports = router;
