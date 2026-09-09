@@ -212,15 +212,41 @@ When the app is ready to go live, the admin swaps the test keys for live keys (`
 
 ## 6. Booking payment (consultation booking)
 
-Same mechanics as the wallet recharge above (real Razorpay order, Checkout, server-side signature verification) — applied to a booking instead of a wallet top-up. Unlike the wallet flow, creating the booking **and** creating its payment order happen in one call.
+The user picks **either** wallet **or** Razorpay when booking — send `paymentMethod: "wallet"` or `paymentMethod: "razorpay"` in the create-booking body. Same `POST /bookings` call either way; what comes back in `payment` differs.
 
-### Step 1 — Create the booking (this also creates the payment order)
+### Option A — `paymentMethod: "wallet"`
+
+Debited instantly from the user's wallet balance (atomic, race-safe). No Razorpay involved, no further step — the booking is `confirmed` immediately.
 
 **POST** `{{base_url}}/bookings`
 Header: `Authorization: Bearer <userToken>`
 Body:
 ```json
-{ "lawyerId": "6a995abc8fb97804251d3550", "consultationType": "Chat", "date": "2026-09-10", "timeSlot": "10:00 AM" }
+{ "lawyerId": "6a995abc8fb97804251d3550", "consultationType": "Chat", "date": "2026-09-10", "timeSlot": "10:00 AM", "paymentMethod": "wallet" }
+```
+
+Response `201`:
+```json
+{
+  "status": "success",
+  "message": "Payment successful, your consultation is confirmed",
+  "data": {
+    "booking": { "id": "6aa1614e91910ef53aa76b8b", "lawyer": { "id": "6a995abc8fb97804251d3550", "name": "Adv. ...", "practiceArea": "Criminal" }, "consultationType": "Chat", "date": "2026-09-10", "timeSlot": "10:00 AM", "amount": 700, "paymentMethod": "wallet", "status": "confirmed", "createdAt": "2026-09-09T13:38:22.586Z" },
+    "payment": null
+  }
+}
+```
+`400` if wallet balance is less than the lawyer's `pricePerSession` — message: `"Insufficient wallet balance for this booking"`. Nothing is created or debited on failure.
+
+### Option B — `paymentMethod: "razorpay"`
+
+Same mechanics as the wallet recharge in §1-5 (real Razorpay order, Checkout, server-side signature verification). Creating the booking **and** creating its payment order happen in one call.
+
+**POST** `{{base_url}}/bookings`
+Header: `Authorization: Bearer <userToken>`
+Body:
+```json
+{ "lawyerId": "6a995abc8fb97804251d3550", "consultationType": "Chat", "date": "2026-09-10", "timeSlot": "10:00 AM", "paymentMethod": "razorpay" }
 ```
 
 Response `201`:
@@ -229,18 +255,18 @@ Response `201`:
   "status": "success",
   "message": "Booking created. Complete the payment to confirm it.",
   "data": {
-    "booking": { "id": "6aa1614e91910ef53aa76b8b", "lawyer": "6a995abc8fb97804251d3550", "consultationType": "Chat", "date": "2026-09-10", "timeSlot": "10:00 AM", "amount": 700, "status": "pending_payment", "createdAt": "2026-09-09T13:38:22.586Z" },
+    "booking": { "id": "6aa1614e91910ef53aa76b8b", "lawyer": "6a995abc8fb97804251d3550", "consultationType": "Chat", "date": "2026-09-10", "timeSlot": "10:00 AM", "amount": 700, "paymentMethod": "razorpay", "status": "pending_payment", "createdAt": "2026-09-09T13:38:22.586Z" },
     "payment": { "orderId": "order_TZxQe9gNfY4M6w", "amount": 700, "currency": "INR", "keyId": "rzp_test_TZQxfuU9KSwZns" }
   }
 }
 ```
 If the Razorpay order fails to create (gateway not configured, Razorpay error), the booking is rolled back too — you won't end up with a `pending_payment` booking stuck holding the slot with no way to pay for it. Just show the error and let the user retry.
 
-### Step 2 — Open Razorpay Checkout
+### Step 2 — Open Razorpay Checkout (Razorpay path only)
 
 `key: payment.keyId`, `amount: payment.amount * 100`, `order_id: payment.orderId`.
 
-### Step 3 — Confirm
+### Step 3 — Confirm (Razorpay path only — wallet bookings are already confirmed in step 1)
 
 **PATCH** `{{base_url}}/bookings/:bookingId/confirm-payment`
 Header: `Authorization: Bearer <userToken>`

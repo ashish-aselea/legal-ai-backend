@@ -1,5 +1,5 @@
 const { z } = require("zod");
-const { CONSULTATION_TYPES, TIME_SLOTS } = require("../models/Booking");
+const { CONSULTATION_TYPES, TIME_SLOTS, PAYMENT_METHODS } = require("../models/Booking");
 
 const isoDate = z
   .string()
@@ -13,6 +13,7 @@ const createBookingSchema = z.object({
   consultationType: z.enum(Object.values(CONSULTATION_TYPES)),
   date: isoDate,
   timeSlot: z.enum(TIME_SLOTS),
+  paymentMethod: z.enum(Object.values(PAYMENT_METHODS)),
 });
 
 const confirmBookingPaymentSchema = z.object({

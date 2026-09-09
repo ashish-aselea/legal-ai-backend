@@ -2221,7 +2221,7 @@
           }
         },
         {
-          "name": "2. Create Booking (also creates the payment order)",
+          "name": "2. Create Booking — pay via Razorpay",
           "request": {
             "method": "POST",
             "header": [
@@ -2245,14 +2245,14 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"lawyerId\": \"{{lawyerProfileId}}\",\n  \"consultationType\": \"Chat\",\n  \"date\": \"{{booking_date}}\",\n  \"timeSlot\": \"11:30 AM\"\n}",
+              "raw": "{\n  \"lawyerId\": \"{{lawyerProfileId}}\",\n  \"consultationType\": \"Chat\",\n  \"date\": \"{{booking_date}}\",\n  \"timeSlot\": \"11:30 AM\",\n  \"paymentMethod\": \"razorpay\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             },
-            "description": "consultationType: 'Chat' | 'Audio' | 'Video'. Booking is created with status 'pending_payment', AND a real Razorpay order (test mode) is created in the same call — response has both data.booking and data.payment (orderId, amount, currency, keyId). One request instead of two: create booking + create order used to be separate endpoints, now combined. Requires Razorpay credentials to already be set via Admin > Set Payment Settings, otherwise 503 (and the booking is rolled back, not left stuck in pending_payment)."
+            "description": "consultationType: 'Chat' | 'Audio' | 'Video'. paymentMethod: 'razorpay' | 'wallet' (required). For 'razorpay': booking is created 'pending_payment' and a real Razorpay order (test mode) is created in the same call — data.payment has { orderId, amount, currency, keyId }, then call '4. Confirm Payment' below. Requires Razorpay credentials to already be set via Admin > Set Payment Settings, otherwise 503 (booking is rolled back, not left stuck)."
           },
           "event": [
             {
@@ -2271,7 +2271,42 @@
           ]
         },
         {
-          "name": "3. Confirm Payment",
+          "name": "3. Create Booking — pay via Wallet",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bookings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lawyerId\": \"{{lawyerProfileId}}\",\n  \"consultationType\": \"Chat\",\n  \"date\": \"{{booking_date}}\",\n  \"timeSlot\": \"2:00 PM\",\n  \"paymentMethod\": \"wallet\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Same as above but paymentMethod: 'wallet' — debits the wallet immediately (atomic, can't go negative) and the booking comes back already 'confirmed' in this one call. data.payment is null (no Razorpay involved). Returns 400 'Insufficient wallet balance for this booking' if the wallet can't cover it — nothing is created or debited in that case. Run 'Wallet' folder's recharge flow first if this fails on a fresh account (balance starts at 0)."
+          }
+        },
+        {
+          "name": "4. Confirm Payment (Razorpay bookings only)",
           "request": {
             "method": "PATCH",
             "header": [

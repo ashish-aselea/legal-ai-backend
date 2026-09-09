@@ -1,10 +1,10 @@
 const { AppError } = require("../middleware/errorHandler");
 const { asyncHandler } = require("../utils/asyncHandler");
-const { User } = require("../models/User");
 const { LawyerProfile, APPROVAL_STATUS } = require("../models/LawyerProfile");
 const { CallSession, CALL_STATUS } = require("../models/CallSession");
 const { generateZegoToken04 } = require("../utils/zegoToken");
 const { verifyZegoWebhookSignature } = require("../utils/zegoWebhook");
+const { debitWallet, getWalletBalance } = require("../utils/walletLedger");
 const { env } = require("../config/env");
 
 const TOKEN_TTL_SECONDS = 3600;
@@ -27,21 +27,6 @@ const stopBillingLoop = (callSessionId) => {
   }
 };
 
-// Atomic conditional decrement — never lets a call push a balance negative,
-// and safe under concurrent calls to the same wallet.
-const debitWallet = async (userId, amount) => {
-  const user = await User.findOneAndUpdate(
-    { _id: userId, walletBalance: { $gte: amount } },
-    { $inc: { walletBalance: -amount } },
-    { new: true }
-  );
-  return { success: !!user, balance: user ? user.walletBalance : null };
-};
-
-const getWalletBalance = async (userId) => {
-  const user = await User.findById(userId).select("walletBalance");
-  return user ? user.walletBalance : 0;
-};
 
 // Shared by /calls/can-start and /calls/register — same checks, run twice
 // because time passes between the two calls and either could have changed.

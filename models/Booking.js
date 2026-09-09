@@ -16,6 +16,11 @@ const BOOKING_STATUS = {
   CANCELLED: "cancelled",
 };
 
+const PAYMENT_METHODS = {
+  WALLET: "wallet",
+  RAZORPAY: "razorpay",
+};
+
 const bookingSchema = new mongoose.Schema(
   {
     user: {
@@ -50,8 +55,9 @@ const bookingSchema = new mongoose.Schema(
       default: BOOKING_STATUS.PENDING_PAYMENT,
       index: true,
     },
-    // Set by POST /bookings/:id/create-order, then filled in as the payment
-    // completes and gets verified — same pattern as WalletTransaction.
+    paymentMethod: { type: String, enum: Object.values(PAYMENT_METHODS), required: true },
+    // Only set when paymentMethod is "razorpay" — filled in as the payment
+    // completes and gets verified, same pattern as WalletTransaction.
     razorpayOrderId: { type: String, default: null },
     razorpayPaymentId: { type: String, default: null },
     razorpaySignature: { type: String, default: null },
@@ -63,4 +69,4 @@ bookingSchema.index({ lawyer: 1, date: 1, timeSlot: 1 });
 
 const Booking = mongoose.model("Booking", bookingSchema);
 
-module.exports = { Booking, CONSULTATION_TYPES, TIME_SLOTS, BOOKING_STATUS };
+module.exports = { Booking, CONSULTATION_TYPES, TIME_SLOTS, BOOKING_STATUS, PAYMENT_METHODS };
